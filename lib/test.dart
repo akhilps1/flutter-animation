@@ -1,0 +1,715 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:gsl_student_app/helper/local_storage.dart';
+import 'package:gsl_student_app/modules/screens/course/controller/course_provider.dart';
+import 'package:gsl_student_app/modules/screens/course/course_tabs.dart';
+import 'package:gsl_student_app/modules/screens/get_admission/get_adm_successfull_screen.dart';
+
+import 'package:gsl_student_app/modules/screens/university/widgets/university_screen_tab_bar.dart';
+
+import 'package:gsl_student_app/utils/error_widget.dart';
+import 'package:gsl_student_app/widgets/debouncer.dart';
+import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../../gen/assets.gen.dart';
+import '../../../theme/color_resources.dart';
+import '../../../theme/dimensions.dart';
+import '../../../theme/t_style.dart';
+import '../../../utils/dommy_data.dart';
+
+import '../../../widgets/custom_form_elements.dart';
+
+List<String> courseTabList = [
+  "Course",
+  "Eligibility",
+  "Course Duration & Intakes",
+  "University",
+  "Entrance",
+  "Syllabus",
+  "Fees & Scholarship",
+  "Placement Availability",
+  "Documents ",
+];
+
+class CourseDetailData {
+  final String universityId;
+  final String courseId;
+
+  CourseDetailData({required this.courseId, required this.universityId});
+}
+
+class CourseDetailScreenTabbed extends StatefulWidget {
+  static const String path = "/course-detail-tab";
+  const CourseDetailScreenTabbed({super.key, required this.courseDetailData});
+  final CourseDetailData courseDetailData;
+  @override
+  State<CourseDetailScreenTabbed> createState() =>
+      _CourseDetailScreenTabbedState();
+}
+
+class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
+    with SingleTickerProviderStateMixin {
+  late TabController tabController =
+      TabController(length: courseTabList.length, vsync: this);
+
+  ScrollController? _scrollController;
+
+  bool lastStatus = true;
+  double height = 100;
+
+  void _scrollListener() {
+    if (_scrollController!.offset == kToolbarHeight) {}
+
+    if (isShrink != lastStatus) {
+      setState(() {
+        lastStatus = isShrink;
+      });
+    }
+  }
+
+  bool get isShrink {
+    return _scrollController != null &&
+        _scrollController!.hasClients &&
+        _scrollController!.offset > (height - kToolbarHeight);
+  }
+
+  bool silverCollapsed = false;
+  bool isCollap = false;
+  bool isCollapsed = false;
+
+  ScrollOffsetController scrollOffsetController = ScrollOffsetController();
+
+  ItemPositionsListener itemPositionsListener = ItemPositionsListener.create();
+
+  ItemScrollController itemScrollController = ItemScrollController();
+
+  ScrollOffsetListener scrollOffsetListener = ScrollOffsetListener.create();
+
+  void tabcontroll() {
+    tabController.addListener(() {
+      _scrollController?.animateTo(0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.fastOutSlowIn);
+      tabsScrollController.addListener(() {});
+
+      tabsScrollController.animateTo(0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.fastOutSlowIn);
+      if (_scrollController?.position.userScrollDirection ==
+          ScrollDirection.forward) {
+        // print('down');
+      } else if (_scrollController?.position.userScrollDirection ==
+          ScrollDirection.reverse) {
+        //  print('up');
+      }
+    });
+  }
+
+  DebouncerFunc debouncer =
+      DebouncerFunc(delay: const Duration(milliseconds: 500));
+
+  bool isInnerScrolled = true;
+
+  @override
+  void initState() {
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    context.read<CourseProvider>().courseDetailApi(
+          widget.courseDetailData.courseId,
+          widget.courseDetailData.universityId,
+        );
+    // });
+    tabcontroll();
+    _scrollController = ScrollController()..addListener(_scrollListener);
+    _scrollController!.addListener(() {
+      silverCollapsed = _scrollController!.offset >= kToolbarHeight;
+      //  print("collappesed sliver 1 $silverCollapsed");
+
+      //  _scrollController!.offset > (height - kToolbarHeight)
+
+      if (_scrollController!.offset > 200 &&
+          !_scrollController!.position.outOfRange) {
+        if (!silverCollapsed) {
+          // do what ever you want when silver is collapsing !
+
+          silverCollapsed = true;
+          // print("collappesed 2");
+          // print(kToolbarHeight);
+          // print(
+          //     "collappesed offestvalue ${_scrollController!.offset.toString()}");
+          setState(() {});
+        } else if (silverCollapsed) {
+          // do what ever you want when silver is collapsing !
+
+          silverCollapsed = true;
+          // print("collappesed 3");
+          // print(kToolbarHeight);
+          // print(
+          //     "collappesed offestvalue ${_scrollController!.offset.toString()}");
+          // print(_scrollController!.offset.toString());
+          setState(() {});
+        }
+      }
+      itemPositionsListener.itemPositions.addListener(() {});
+      final firstVisibleItemIndex =
+          itemPositionsListener.itemPositions.value.first.index;
+      // if (firstVisibleItemIndex != null) {
+
+      tabController.animateTo(firstVisibleItemIndex,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    });
+
+    super.initState();
+  }
+
+  ScrollController tabsScrollController = ScrollController();
+  @override
+  void dispose() {
+    _scrollController?.removeListener(_scrollListener);
+    _scrollController?.dispose();
+    super.dispose();
+  }
+
+  // bool isSaved = false;
+  @override
+  Widget build(BuildContext context) {
+    // Provider.of<CourseProvider>(context, listen: false).courseDetailApi(
+    //     widget.courseDetailData.courseId, widget.courseDetailData.universityId);
+    return DefaultTabController(
+      length: courseTabList.length,
+      child: Consumer<CourseProvider>(builder: (context, controller, _) {
+        return Scaffold(
+          // floatingActionButton: FloatingActionButton(onPressed: () {
+          //   print(controller.courseLikebool);
+          // }),
+          extendBodyBehindAppBar: true,
+          body: controller.loadingCourseDetailLoading
+              ? const SpinKitCircle(
+                  color: ColorResources.PRIMARY,
+                  size: 25.0,
+                )
+              : (controller.errorMessage != null)
+                  ? CommonWidgets.errorReload(
+                      controller.errorMessage.toString(), callback: () {
+                      Provider.of<CourseProvider>(context, listen: false)
+                          .courseDetailApi(widget.courseDetailData.courseId,
+                              widget.courseDetailData.universityId);
+                    })
+                  : NestedScrollView(
+                      controller: _scrollController,
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return [
+                          SliverLayoutBuilder(
+                              builder: (BuildContext context, constraints) {
+                            // final scrolled = constraints.scrollOffset > 0;
+
+                            silverCollapsed =
+                                _scrollController!.offset >= kToolbarHeight;
+
+                            return SliverAppBar(
+                                floating: false,
+                                collapsedHeight: 120,
+                                leading: CupertinoButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  child: SvgPicture.asset(
+                                      Assets.icon.eventbackbutton.keyName),
+                                ),
+                                elevation: 0,
+                                pinned: true,
+                                expandedHeight: 380,
+                                flexibleSpace: Container(
+                                  padding: const EdgeInsets.only(bottom: 100),
+                                  // Set a fixed height for the flexible space
+                                  height:
+                                      300, // Adjust this to your desired height
+                                  decoration: const BoxDecoration(
+                                    image: DecorationImage(
+                                      image: NetworkImage(
+                                          "https://images.pexels.com/photos/3938023/pexels-photo-3938023.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"),
+                                      //  CachedNetworkImageProvider(
+                                      //     "https://images.pexels.com/photos/3938023/pexels-photo-3938023.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                bottom: PreferredSize(
+                                    preferredSize: const Size.fromHeight(100),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // isShrink
+                                        //     ? const SizedBox()
+                                        //     : Stack(
+                                        //         children: [
+                                        //           Column(
+                                        //             children: [
+                                        //               // const SizedBox(
+                                        //               //   height: 75,
+                                        //               //   width: double.infinity,
+                                        //               // ),
+                                        //               // Container(
+                                        //               //   height: 70,
+                                        //               //   width: double.infinity,
+                                        //               //   color: Colors.white,
+                                        //               // ),
+                                        //             ],
+                                        //           ),
+                                        // Positioned(
+                                        //     bottom: 0,
+                                        //     left: 0,
+                                        //     right: 0,
+                                        //     child: Padding(
+                                        //       padding: const EdgeInsets.only(
+                                        //           bottom: 5),
+                                        //       child: Container(
+                                        //         padding:
+                                        //             const EdgeInsets.all(18),
+                                        //         width: 130,
+                                        //         height: 130,
+                                        //         decoration: BoxDecoration(
+                                        //             shape: BoxShape.circle,
+                                        //             color: Colors.white,
+                                        //             boxShadow: [
+                                        //               BoxShadow(
+                                        //                 color: Colors.grey
+                                        //                     .withOpacity(0.5),
+                                        //                 spreadRadius: 2,
+                                        //                 blurRadius: 2,
+                                        //                 offset:
+                                        //                     const Offset(0, 2),
+                                        //               )
+                                        //             ]),
+                                        //         child: CachedNetworkImage(
+                                        //             imageUrl: DummyData()
+                                        //                 .universitythumnailList()[
+                                        //                     7]
+                                        //                 .logo!),
+                                        //       ),
+                                        //     ))
+                                        //   ],
+                                        // ),
+                                        Container(
+                                          // height: 100,
+                                          width: double.infinity,
+
+                                          decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.vertical(
+                                                      top: Radius.circular(
+                                                          isShrink ? 16 : 0))),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  controller.coursedetailData
+                                                          ?.courseName ??
+                                                      "",
+                                                  style: h4.black,
+                                                ),
+                                                const SizedBox(
+                                                  height: 12,
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    SvgPicture.asset(Assets
+                                                        .icon
+                                                        .universityiconmini
+                                                        .keyName),
+                                                    gapHorizontal,
+                                                    Text(
+                                                      controller
+                                                              .coursedetailData
+                                                              ?.universityState ??
+                                                          "",
+                                                      style: body2.grey1,
+                                                    )
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        //  gap,
+                                        Container(
+                                          width: double.infinity,
+                                          color: Colors.white,
+                                          child: UniversityScreenTabBar2(
+                                            tabs: courseTabList,
+                                            tabController: tabController,
+                                          ),
+                                        ),
+                                      ],
+                                    )),
+                                actions: [
+                                  CupertinoButton(
+                                      pressedOpacity: 0.8,
+                                      //color: Colors.grey,
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () {
+                                        // controller = !isSaved;
+                                        debouncer.run(() {
+                                          controller.courseSaveApi(
+                                              controller.coursedetailData
+                                                      ?.courseId
+                                                      .toString() ??
+                                                  "",
+                                              // AppConstants.userId,
+                                              LocalStorage.userData.id
+                                                  .toString(),
+                                              !controller.courseLikebool,
+                                              () {});
+
+                                          HapticFeedback.mediumImpact();
+                                          setState(() {});
+                                        });
+                                      },
+                                      child: SvgPicture.asset(
+                                        // isSaved
+                                        controller.courseLikebool
+                                            ? Assets.icon.savedIcon.keyName
+                                            : Assets
+                                                .icon.saveButtonIcon.keyName,
+                                      )),
+                                  CupertinoButton(
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () async {
+                                        await Share.share(
+                                          'checkout this University : $unilink',
+                                          subject: 'checkout this University',
+                                        );
+                                        //  }
+                                      },
+                                      child: SvgPicture.asset(
+                                          Assets.icon.shareButtonIcon.keyName)),
+                                ]);
+                          }),
+                        ];
+                      },
+                      body: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: PageStorage(
+                            bucket: PageStorageBucket(),
+                            child: TabBarView(
+                              controller: tabController,
+                              children: const [
+                                AboutCourseTab(),
+                                EligiblityCourseTab(),
+                                DurationCourseTab(),
+                                UniversityCourseTab(),
+                                EntranceTab(),
+                                CourseSyllabus(),
+                                CourseScholarshipTab(),
+                                PlacementAvailability(),
+                                Documents(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )),
+          bottomNavigationBar: Visibility(
+            visible: (!controller.loadingCourseDetailLoading &&
+                controller.errorMessage == null),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                child: SubmitButton.primary(
+                  "Get Admission",
+                  onTap: (value) {
+                    controller.courseApplyApi(
+                        LocalStorage.userData.id.toString(),
+                        // AppConstants.userId.toString(),
+                        controller.coursedetailData, () {
+                      Navigator.pushNamed(
+                          context, GetAdmissionSuccesfullScreen.path,
+                          arguments: widget.courseDetailData.courseId);
+                    });
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget myWidget() {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          flex: 7,
+          child: Container(
+            color: Colors.green,
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Container(
+            color: Colors.yellow,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Column listingWidget(String title, String icon) {
+    return Column(
+      children: [
+        customDivider(),
+        Row(
+          children: [
+            SvgPicture.asset(icon),
+            gapHorizontalLarge,
+            Text(
+              title,
+              style: heading1.primary,
+            ),
+          ],
+        ),
+        gapLarge
+      ],
+    );
+  }
+
+  Widget textSmallWidth(Widget customwidget) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        // width: double.infinity,
+        decoration: BoxDecoration(
+            color: ColorResources.GREY5,
+            borderRadius: BorderRadius.circular(57)),
+        child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: customwidget),
+      ),
+    );
+  }
+}
+
+Widget textSmallWidth(Widget customwidget) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Container(
+      // width: double.infinity,
+      decoration: BoxDecoration(
+          color: ColorResources.GREY5, borderRadius: BorderRadius.circular(57)),
+      child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: customwidget),
+    ),
+  );
+}
+
+// class SliverAppBarAnimation extends StatefulWidget {
+//   @override
+//   _SliverAppBarAnimationState createState() => _SliverAppBarAnimationState();
+// }
+
+// class _SliverAppBarAnimationState extends State<SliverAppBarAnimation> {
+//   double circleTop = 100.0;
+//   bool isExpanded = true;
+
+//   double circleAvatarTopMargin = 60;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return DefaultTabController(
+//       length: 11,
+//       child: Scaffold(
+//         // backgroundColor: Colors.amber,
+//         body: NestedScrollView(
+//           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+//             var banner =
+//                 'https://www.hindustantimes.com/ht-img/img/2023/06/29/1600x900/Supreme-Court-Affirmative-Action-0_1688058911335_1688058949030.jpg';
+//             return <Widget>[
+//               SliverAppBar(
+//                 stretch: true,
+//                 expandedHeight: 250.0,
+//                 primary: true,
+//                 pinned: true,
+//                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+//                 leading: CupertinoButton(
+//                   onPressed: () {
+//                     Navigator.pop(context);
+//                   },
+//                   padding: EdgeInsets.zero,
+//                   child: SvgPicture.asset(Assets.icon.eventbackbutton.keyName),
+//                 ),
+//                 flexibleSpace: FlexibleSpaceBar(
+//                   title: SafeArea(
+//                     child: CircleAvatar(
+//                       radius: 100 / 2,
+//                       backgroundColor: Colors.white,
+//                       child: Image.network(
+//                         'https://1000logos.net/wp-content/uploads/2017/02/Harvard-Logo.png',
+//                         fit: BoxFit.fill,
+//                       ),
+//                     ),
+//                   ),
+//                   centerTitle: true,
+//                   background: Column(
+//                     children: [
+//                       Container(
+//                         height: 220,
+//                         decoration: BoxDecoration(
+//                           image: DecorationImage(
+//                             image: NetworkImage(banner),
+//                             fit: BoxFit.fill,
+//                           ),
+//                         ),
+//                       ),
+//                       Container(
+//                         color: Colors.white,
+//                       )
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ];
+//           },
+//           body: Column(
+//             children: <Widget>[
+//               Text(
+//                 'University of Glasgow',
+//                 style: h4.black,
+//               ),
+//               const SizedBox(
+//                 height: 12,
+//               ),
+//               Center(
+//                   child: IconTextCenter(
+//                       text: 'Glasgow, Scotland',
+//                       icon: Assets.icon.locationIconSuffix.keyName)),
+//               const SizedBox(
+//                 height: 12,
+//               ),
+//               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+//                 IconTextCenter(
+//                   icon: Assets.icon.establishedIcon.keyName,
+//                   text: 'ESTD  1930',
+//                 ),
+//                 gapHorizontalLarge,
+//                 IconTextCenter(
+//                   icon: Assets.icon.ranking.keyName,
+//                   text: '5',
+//                 ),
+//                 gapHorizontalLarge,
+//                 Row(
+//                   children: [
+//                     SvgPicture.asset(Assets.icon.websiteIcon.keyName),
+//                     gapHorizontal,
+//                     SizedBox(
+//                         width: 100,
+//                         child: Text(
+//                           'www.glasgowuniversity.com.co.in.uk',
+//                           maxLines: 1,
+//                           overflow: TextOverflow.clip,
+//                           style: body2.blackgrey,
+//                         )),
+//                   ],
+//                 ),
+//               ]),
+//               Container(
+//                 child: TabBar(
+//                   tabs: [
+//                     Tab(text: 'Tab 1'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                     Tab(text: 'Tab 2'),
+//                   ],
+//                 ),
+//               ),
+//               Expanded(
+//                 child: TabBarView(
+//                   children: [
+//                     AboutWidget(),
+//                     ContactInfoWidget(),
+//                     CourseOffered(),
+//                     FacilitiesWidget(),
+//                     UniversityRankingWidget(),
+//                     UniversityAffiliations(),
+//                     ScholarshipDetailsWidget(),
+//                     BrochuresWidget(),
+//                     AccommodationWIdget(),
+//                     ImagesWidget(),
+//                     VideosWidget(),
+//                   ],
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   void _updateCirclePosition(double shrinkOffset) {
+//     setState(() {
+//       circleTop = 100 - shrinkOffset;
+//       if (circleTop < 0) {
+//         circleTop = 0;
+//       }
+//     });
+//   }
+// }
+
+// class CircleHeaderDelegate extends SliverPersistentHeaderDelegate {
+//   final double circleTop;
+
+//   CircleHeaderDelegate(this.circleTop);
+
+//   @override
+//   Widget build(
+//       BuildContext context, double shrinkOffset, bool overlapsContent) {
+//     return Stack(
+//       children: [
+//         Positioned(
+//           top: circleTop,
+//           left: MediaQuery.of(context).size.width / 2 - 50,
+//           child: Container(
+//             width: 100,
+//             height: 100,
+//             decoration: BoxDecoration(
+//               color: Colors.blue,
+//               shape: BoxShape.circle,
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+
+//   @override
+//   double get maxExtent => 100.0;
+
+//   @override
+//   double get minExtent => 0.0;
+
+//   @override
+//   bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
+//     return false;
+//   }
+// }
