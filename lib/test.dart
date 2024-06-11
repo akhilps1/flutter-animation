@@ -1,62 +1,78 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:gsl_student_app/core/app_constants.dart';
 import 'package:gsl_student_app/helper/local_storage.dart';
-import 'package:gsl_student_app/modules/screens/course/controller/course_provider.dart';
-import 'package:gsl_student_app/modules/screens/course/course_tabs.dart';
-import 'package:gsl_student_app/modules/screens/get_admission/get_adm_successfull_screen.dart';
+import 'package:gsl_student_app/modules/screens/university/controller/university_provider.dart';
+import 'package:gsl_student_app/modules/screens/university/model/university_detail_model.dart';
 
+import 'package:gsl_student_app/modules/screens/university/widgets/about_widget.dart';
+import 'package:gsl_student_app/modules/screens/university/widgets/accommodation_w_idget.dart';
+import 'package:gsl_student_app/modules/screens/university/widgets/brochures.dart';
+import 'package:gsl_student_app/modules/screens/university/widgets/contact_info_widget.dart';
+import 'package:gsl_student_app/modules/screens/university/widgets/course_offered.dart';
+
+import 'package:gsl_student_app/modules/screens/university/widgets/facilities_widget.dart';
+
+import 'package:gsl_student_app/modules/screens/university/widgets/icon_text_center.dart';
+
+import 'package:gsl_student_app/modules/screens/university/widgets/images_widget.dart';
+import 'package:gsl_student_app/modules/screens/university/widgets/media_widgets.dart';
+
+import 'package:gsl_student_app/modules/screens/university/widgets/scholarship_details_widget.dart';
+
+import 'package:gsl_student_app/modules/screens/university/widgets/university_affiliations.dart';
+import 'package:gsl_student_app/modules/screens/university/widgets/university_ranking.dart';
 import 'package:gsl_student_app/modules/screens/university/widgets/university_screen_tab_bar.dart';
 
+import 'package:gsl_student_app/modules/screens/university/widgets/videos_widget.dart';
 import 'package:gsl_student_app/utils/error_widget.dart';
+import 'package:gsl_student_app/utils/url_launchers.dart';
 import 'package:gsl_student_app/widgets/debouncer.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../gen/assets.gen.dart';
-import '../../../theme/color_resources.dart';
-import '../../../theme/dimensions.dart';
-import '../../../theme/t_style.dart';
-import '../../../utils/dommy_data.dart';
+import '../../../../gen/assets.gen.dart';
+import '../../../../theme/color_resources.dart';
+import '../../../../theme/dimensions.dart';
+import '../../../../theme/t_style.dart';
+import '../../../../utils/dommy_data.dart';
 
-import '../../../widgets/custom_form_elements.dart';
+import '../../../../widgets/custom_form_elements.dart';
 
-List<String> courseTabList = [
-  "Course",
-  "Eligibility",
-  "Course Duration & Intakes",
-  "University",
-  "Entrance",
-  "Syllabus",
-  "Fees & Scholarship",
-  "Placement Availability",
-  "Documents ",
+List<String> universityTabTiles = [
+  "About",
+  "Contact info",
+  "Courses Offered",
+  "Facilities",
+  "University Ranking",
+  "University Affiliations",
+  "Scholarship Details",
+  "Brochures",
+  "Accommodation",
+  "Photos",
+  "Videos",
 ];
 
-class CourseDetailData {
-  final String universityId;
-  final String courseId;
+class DetailUniversityScreen extends StatefulWidget {
+  static const String path = "/detailed-University-screen";
+  const DetailUniversityScreen({super.key, required this.id});
+  final int id;
 
-  CourseDetailData({required this.courseId, required this.universityId});
-}
-
-class CourseDetailScreenTabbed extends StatefulWidget {
-  static const String path = "/course-detail-tab";
-  const CourseDetailScreenTabbed({super.key, required this.courseDetailData});
-  final CourseDetailData courseDetailData;
   @override
-  State<CourseDetailScreenTabbed> createState() =>
-      _CourseDetailScreenTabbedState();
+  State<DetailUniversityScreen> createState() => _DetailUniversityScreenState();
 }
 
-class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
+class _DetailUniversityScreenState extends State<DetailUniversityScreen>
     with SingleTickerProviderStateMixin {
   late TabController tabController =
-      TabController(length: courseTabList.length, vsync: this);
+      TabController(length: universityTabTiles.length, vsync: this);
 
   ScrollController? _scrollController;
 
@@ -118,40 +134,22 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
 
   @override
   void initState() {
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    context.read<CourseProvider>().courseDetailApi(
-          widget.courseDetailData.courseId,
-          widget.courseDetailData.universityId,
-        );
-    // });
+    Provider.of<UniversityProvider>(context, listen: false)
+        .univeristyDetailApi(widget.id);
     tabcontroll();
     _scrollController = ScrollController()..addListener(_scrollListener);
     _scrollController!.addListener(() {
       silverCollapsed = _scrollController!.offset >= kToolbarHeight;
-      //  print("collappesed sliver 1 $silverCollapsed");
-
-      //  _scrollController!.offset > (height - kToolbarHeight)
 
       if (_scrollController!.offset > 200 &&
           !_scrollController!.position.outOfRange) {
         if (!silverCollapsed) {
-          // do what ever you want when silver is collapsing !
-
           silverCollapsed = true;
-          // print("collappesed 2");
-          // print(kToolbarHeight);
-          // print(
-          //     "collappesed offestvalue ${_scrollController!.offset.toString()}");
+
           setState(() {});
         } else if (silverCollapsed) {
-          // do what ever you want when silver is collapsing !
-
           silverCollapsed = true;
-          // print("collappesed 3");
-          // print(kToolbarHeight);
-          // print(
-          //     "collappesed offestvalue ${_scrollController!.offset.toString()}");
-          // print(_scrollController!.offset.toString());
+
           setState(() {});
         }
       }
@@ -168,6 +166,7 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
   }
 
   ScrollController tabsScrollController = ScrollController();
+
   @override
   void dispose() {
     _scrollController?.removeListener(_scrollListener);
@@ -175,20 +174,13 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
     super.dispose();
   }
 
-  // bool isSaved = false;
-  @override
   Widget build(BuildContext context) {
-    // Provider.of<CourseProvider>(context, listen: false).courseDetailApi(
-    //     widget.courseDetailData.courseId, widget.courseDetailData.universityId);
-    return DefaultTabController(
-      length: courseTabList.length,
-      child: Consumer<CourseProvider>(builder: (context, controller, _) {
-        return Scaffold(
-          // floatingActionButton: FloatingActionButton(onPressed: () {
-          //   print(controller.courseLikebool);
-          // }),
+    return Consumer<UniversityProvider>(builder: (context, controller, _) {
+      return DefaultTabController(
+        length: universityTabTiles.length,
+        child: Scaffold(
           extendBodyBehindAppBar: true,
-          body: controller.loadingCourseDetailLoading
+          body: controller.universityDetailLoading
               ? const SpinKitCircle(
                   color: ColorResources.PRIMARY,
                   size: 25.0,
@@ -196,9 +188,8 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
               : (controller.errorMessage != null)
                   ? CommonWidgets.errorReload(
                       controller.errorMessage.toString(), callback: () {
-                      Provider.of<CourseProvider>(context, listen: false)
-                          .courseDetailApi(widget.courseDetailData.courseId,
-                              widget.courseDetailData.universityId);
+                      Provider.of<UniversityProvider>(context, listen: false)
+                          .univeristyDetailApi(widget.id);
                     })
                   : NestedScrollView(
                       controller: _scrollController,
@@ -206,8 +197,6 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                         return [
                           SliverLayoutBuilder(
                               builder: (BuildContext context, constraints) {
-                            // final scrolled = constraints.scrollOffset > 0;
-
                             silverCollapsed =
                                 _scrollController!.offset >= kToolbarHeight;
 
@@ -224,7 +213,7 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                                 ),
                                 elevation: 0,
                                 pinned: true,
-                                expandedHeight: 380,
+                                expandedHeight: 480,
                                 flexibleSpace: Container(
                                   padding: const EdgeInsets.only(bottom: 100),
                                   // Set a fixed height for the flexible space
@@ -232,71 +221,79 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                                       300, // Adjust this to your desired height
                                   decoration: const BoxDecoration(
                                     image: DecorationImage(
-                                      image: NetworkImage(
-                                          "https://images.pexels.com/photos/3938023/pexels-photo-3938023.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"),
-                                      //  CachedNetworkImageProvider(
-                                      //     "https://images.pexels.com/photos/3938023/pexels-photo-3938023.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"),
+                                      image: CachedNetworkImageProvider(
+                                          "https://glasgowconventionbureau.com/media/1298/shutterstock_644108704.jpg?center=0.55633802816901412,0.631578947368421&mode=crop&width=800&height=480&rnd=131540267720000000"),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
                                 ),
                                 bottom: PreferredSize(
-                                    preferredSize: const Size.fromHeight(100),
+                                    preferredSize: const Size.fromHeight(80),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        // isShrink
-                                        //     ? const SizedBox()
-                                        //     : Stack(
-                                        //         children: [
-                                        //           Column(
-                                        //             children: [
-                                        //               // const SizedBox(
-                                        //               //   height: 75,
-                                        //               //   width: double.infinity,
-                                        //               // ),
-                                        //               // Container(
-                                        //               //   height: 70,
-                                        //               //   width: double.infinity,
-                                        //               //   color: Colors.white,
-                                        //               // ),
-                                        //             ],
-                                        //           ),
-                                        // Positioned(
-                                        //     bottom: 0,
-                                        //     left: 0,
-                                        //     right: 0,
-                                        //     child: Padding(
-                                        //       padding: const EdgeInsets.only(
-                                        //           bottom: 5),
-                                        //       child: Container(
-                                        //         padding:
-                                        //             const EdgeInsets.all(18),
-                                        //         width: 130,
-                                        //         height: 130,
-                                        //         decoration: BoxDecoration(
-                                        //             shape: BoxShape.circle,
-                                        //             color: Colors.white,
-                                        //             boxShadow: [
-                                        //               BoxShadow(
-                                        //                 color: Colors.grey
-                                        //                     .withOpacity(0.5),
-                                        //                 spreadRadius: 2,
-                                        //                 blurRadius: 2,
-                                        //                 offset:
-                                        //                     const Offset(0, 2),
-                                        //               )
-                                        //             ]),
-                                        //         child: CachedNetworkImage(
-                                        //             imageUrl: DummyData()
-                                        //                 .universitythumnailList()[
-                                        //                     7]
-                                        //                 .logo!),
-                                        //       ),
-                                        //     ))
-                                        //   ],
-                                        // ),
+                                        isShrink
+                                            ? const SizedBox()
+                                            : Stack(
+                                                children: [
+                                                  Column(
+                                                    children: [
+                                                      const SizedBox(
+                                                        height: 75,
+                                                        width: double.infinity,
+                                                      ),
+                                                      Container(
+                                                        height: 70,
+                                                        width: double.infinity,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Positioned(
+                                                      bottom: 0,
+                                                      left: 0,
+                                                      right: 0,
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                                bottom: 5),
+                                                        child: Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .all(18),
+                                                          width: 130,
+                                                          height: 130,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                                  shape: BoxShape
+                                                                      .circle,
+                                                                  color: Colors
+                                                                      .white,
+                                                                  boxShadow: [
+                                                                BoxShadow(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .withOpacity(
+                                                                          0.5),
+                                                                  spreadRadius:
+                                                                      2,
+                                                                  blurRadius: 2,
+                                                                  offset:
+                                                                      const Offset(
+                                                                          0, 2),
+                                                                )
+                                                              ]),
+                                                          child: CachedNetworkImage(
+                                                              imageUrl: DummyData()
+                                                                  .universitythumnailList()[
+                                                                      7]
+                                                                  .logo!),
+                                                        ),
+                                                      ))
+                                                ],
+                                              ),
                                         Container(
                                           // height: 100,
                                           width: double.infinity,
@@ -310,34 +307,105 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                                           child: Padding(
                                             padding: const EdgeInsets.all(16.0),
                                             child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  controller.coursedetailData
-                                                          ?.courseName ??
+                                                  controller
+                                                          .universityDetailModel
+                                                          ?.universityDetails
+                                                          ?.universityName ??
                                                       "",
                                                   style: h4.black,
                                                 ),
                                                 const SizedBox(
                                                   height: 12,
                                                 ),
-                                                Row(
-                                                  children: [
-                                                    SvgPicture.asset(Assets
-                                                        .icon
-                                                        .universityiconmini
-                                                        .keyName),
-                                                    gapHorizontal,
-                                                    Text(
-                                                      controller
-                                                              .coursedetailData
-                                                              ?.universityState ??
-                                                          "",
-                                                      style: body2.grey1,
-                                                    )
-                                                  ],
-                                                ),
+                                                Center(
+                                                    child: IconTextCenter(
+                                                        text: '${controller.universityDetailModel?.universityDetails?.universityState ?? ""}, ' +
+                                                            extractCountry(controller
+                                                                    .universityDetailModel
+                                                                    ?.universityDetails
+                                                                    ?.universityCountry ??
+                                                                ""),
+                                                        //'${controller.universityDetailModel?.universityDetails?.universityCity ?? ""}',
+                                                        icon: Assets
+                                                            .icon
+                                                            .locationIconSuffix
+                                                            .keyName)),
+                                                isShrink
+                                                    ? const SizedBox()
+                                                    : const SizedBox(
+                                                        height: 12,
+                                                      ),
+                                                isShrink
+                                                    ? const SizedBox()
+                                                    : Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          IconTextCenter(
+                                                              text:
+                                                                  'ESTD  ${extractYear(controller.universityDetailModel?.universityDetails?.universityEstablishedYear.toString() ?? "")}',
+                                                              icon: Assets
+                                                                  .icon
+                                                                  .establishedIcon
+                                                                  .keyName),
+                                                          gapHorizontalLarge,
+                                                          IconTextCenter(
+                                                              text: toOrdinal(int
+                                                                  .parse(controller
+                                                                          .universityDetailModel
+                                                                          ?.universityDetails
+                                                                          ?.rank ??
+                                                                      '')),
+                                                              icon: Assets
+                                                                  .icon
+                                                                  .ranking
+                                                                  .keyName),
+                                                          gapHorizontalLarge,
+                                                          Row(
+                                                            children: [
+                                                              SvgPicture.asset(
+                                                                  Assets
+                                                                      .icon
+                                                                      .websiteIcon
+                                                                      .keyName),
+                                                              gapHorizontal,
+                                                              SizedBox(
+                                                                  // width: 100,
+                                                                  child:
+                                                                      CupertinoButton(
+                                                                padding:
+                                                                    EdgeInsets
+                                                                        .zero,
+                                                                minSize: 0,
+                                                                onPressed: () {
+                                                                  UrlLauncherWidget().launchURL(controller
+                                                                          .universityDetailModel
+                                                                          ?.universityDetails
+                                                                          ?.websiteLink ??
+                                                                      '');
+                                                                },
+                                                                child: Text(
+                                                                  "Website",
+                                                                  // controller
+                                                                  //         .universityDetailModel
+                                                                  //         ?.universityDetails
+                                                                  //         ?.websiteLink ??
+                                                                  //     '',
+                                                                  maxLines: 1,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .clip,
+                                                                  style: body2
+                                                                      .blackgrey,
+                                                                ),
+                                                              )),
+                                                            ],
+                                                          )
+                                                        ],
+                                                      ),
                                               ],
                                             ),
                                           ),
@@ -347,7 +415,7 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                                           width: double.infinity,
                                           color: Colors.white,
                                           child: UniversityScreenTabBar2(
-                                            tabs: courseTabList,
+                                            tabs: universityTabTiles,
                                             tabController: tabController,
                                           ),
                                         ),
@@ -359,26 +427,22 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                                       //color: Colors.grey,
                                       padding: EdgeInsets.zero,
                                       onPressed: () {
-                                        // controller = !isSaved;
                                         debouncer.run(() {
-                                          controller.courseSaveApi(
-                                              controller.coursedetailData
-                                                      ?.courseId
+                                          controller.universitySaveApi(
+                                              controller.universityDetailModel
+                                                      ?.universityDetails?.id
                                                       .toString() ??
                                                   "",
                                               // AppConstants.userId,
-                                              LocalStorage.userData.id
-                                                  .toString(),
-                                              !controller.courseLikebool,
+                                              LocalStorage.userData?.id ?? 0,
+                                              !controller.universityLikeBool,
                                               () {});
-
                                           HapticFeedback.mediumImpact();
                                           setState(() {});
                                         });
                                       },
                                       child: SvgPicture.asset(
-                                        // isSaved
-                                        controller.courseLikebool
+                                        controller.universityLikeBool
                                             ? Assets.icon.savedIcon.keyName
                                             : Assets
                                                 .icon.saveButtonIcon.keyName,
@@ -386,6 +450,7 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                                   CupertinoButton(
                                       padding: EdgeInsets.zero,
                                       onPressed: () async {
+                                        // void sharePressed(BuildContext context) async {
                                         await Share.share(
                                           'checkout this University : $unilink',
                                           subject: 'checkout this University',
@@ -406,46 +471,52 @@ class _CourseDetailScreenTabbedState extends State<CourseDetailScreenTabbed>
                             bucket: PageStorageBucket(),
                             child: TabBarView(
                               controller: tabController,
-                              children: const [
-                                AboutCourseTab(),
-                                EligiblityCourseTab(),
-                                DurationCourseTab(),
-                                UniversityCourseTab(),
-                                EntranceTab(),
-                                CourseSyllabus(),
-                                CourseScholarshipTab(),
-                                PlacementAvailability(),
-                                Documents(),
+                              children: [
+                                AboutWidget(
+                                  controller: controller,
+                                ),
+                                ContactInfoWidget(
+                                  controller: controller,
+                                ),
+                                const CourseOffered(),
+                                FacilitiesWidget(
+                                    universityFacility: controller
+                                            .universityDetailModel
+                                            ?.universityFacility ??
+                                        []),
+                                const UniversityRankingWidget(),
+                                const UniversityAffiliations(),
+                                const ScholarshipDetailsWidget(),
+                                const BrochuresWidget(),
+                                const AccommodationWIdget(),
+                                ImagesBoxfitOld(
+                                    images: controller
+                                            .universityDetailModel
+                                            ?.universityDetails
+                                            ?.universityImages ??
+                                        []),
+                                ListView.builder(
+                                  itemCount: controller
+                                      .universityDetailModel
+                                      ?.universityDetails
+                                      ?.universityVideos
+                                      ?.length,
+                                  itemBuilder: (context, index) => VideosWidget(
+                                      universityVideos: controller
+                                              .universityDetailModel
+                                              ?.universityDetails
+                                              ?.universityVideos?[index] ??
+                                          UniversityVideos()),
+                                )
+                                //  VideosWidget(),
                               ],
                             ),
                           ),
                         ),
                       )),
-          bottomNavigationBar: Visibility(
-            visible: (!controller.loadingCourseDetailLoading &&
-                controller.errorMessage == null),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                child: SubmitButton.primary(
-                  "Get Admission",
-                  onTap: (value) {
-                    controller.courseApplyApi(
-                        LocalStorage.userData.id.toString(),
-                        // AppConstants.userId.toString(),
-                        controller.coursedetailData, () {
-                      Navigator.pushNamed(
-                          context, GetAdmissionSuccesfullScreen.path,
-                          arguments: widget.courseDetailData.courseId);
-                    });
-                  },
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
+        ),
+      );
+    });
   }
 
   Widget myWidget() {
